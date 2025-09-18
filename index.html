@@ -9,7 +9,7 @@
     <style>
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+            background: linear-gradient(135deg, #66e6f5ff 0%, #c3cfe2 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -22,42 +22,58 @@
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
         }
         .card {
-            background-color: rgba(255, 255, 255, 0.8);
+            background-color: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+        .btn {
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
         }
         .btn-analyze {
             background: linear-gradient(45deg, #28a745, #218838);
-            transition: all 0.3s ease;
             box-shadow: 0 4px 15px 0 rgba(40, 167, 69, 0.5);
         }
         .btn-analyze:hover {
-            transform: translateY(-3px);
             box-shadow: 0 6px 20px 0 rgba(40, 167, 69, 0.6);
+        }
+        .btn-suggest {
+            background: linear-gradient(45deg, #17a2b8, #138496);
+            box-shadow: 0 4px 15px 0 rgba(23, 162, 184, 0.5);
+        }
+        .btn-suggest:hover {
+             box-shadow: 0 6px 20px 0 rgba(23, 162, 184, 0.6);
         }
         .btn-clear {
             background: linear-gradient(45deg, #dc3545, #c82333);
-            transition: all 0.3s ease;
             box-shadow: 0 4px 15px 0 rgba(220, 53, 69, 0.5);
         }
         .btn-clear:hover {
-            transform: translateY(-3px);
             box-shadow: 0 6px 20px 0 rgba(220, 53, 69, 0.6);
         }
-        .report-section {
-            display: none;
+        .keyword-suggestion {
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+            color: #495057;
         }
-        .chart-bar-container {
-            height: 250px;
+        .keyword-suggestion:hover {
+            background-color: #d1d9e0;
         }
-        .chart-bar {
-            transition: height 0.5s ease-out;
-            background: linear-gradient(to top, #66a6ff, #89f7fe);
+        .keyword-suggestion.selected {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+            font-weight: 600;
         }
-        .sentiment-positive { color: #28a745; }
-        .sentiment-negative { color: #dc3545; }
-        .sentiment-neutral { color: #6c757d; }
+        .report-section { display: none; }
+        .sentiment-positive { color: #28a745; font-weight: 600; }
+        .sentiment-negative { color: #dc3545; font-weight: 600; }
+        .sentiment-neutral { color: #6c757d; font-weight: 600; }
         .ai-section {
             background: linear-gradient(135deg, rgba(233, 246, 255, 0.7), rgba(224, 239, 255, 0.7));
             border: 1px solid rgba(0, 123, 255, 0.3);
@@ -67,8 +83,52 @@
             50% { background-color: rgba(204, 229, 255, 0.8); }
             100% { background-color: rgba(224, 239, 255, 0.7); }
         }
-        .generating-ai {
-            animation: pulse-bg 2s infinite;
+        .generating-ai { animation: pulse-bg 2s infinite; }
+        .report-h2 {
+            font-size: 1.875rem; /* text-3xl */
+            font-weight: 700;
+            border-bottom: 2px solid #66a6ff;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+            color: #1a202c;
+        }
+        .report-h3 {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 1rem;
+        }
+        .horizontal-bar {
+            background: linear-gradient(90deg, #89f7fe, #66a6ff);
+            text-align: right;
+            padding-right: 8px;
+            color: white;
+            white-space: nowrap;
+            transition: width 0.8s ease-in-out;
+            border-radius: 0.375rem;
+        }
+        .pdf-export-prepare * {
+            transition: none !important;
+            animation: none !important;
+        }
+        .copy-btn {
+            background-color: #e2e8f0;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .copy-btn:hover {
+            background-color: #cbd5e1;
+        }
+        .copy-btn svg {
+            width: 1rem;
+            height: 1rem;
+            color: #4a5568;
         }
     </style>
 </head>
@@ -82,36 +142,40 @@
     <div class="container mx-auto p-4 md:p-8 flex-grow">
         <div id="input-section" class="card rounded-2xl p-6 md:p-8">
             <h1 class="text-3xl md:text-4xl font-bold text-center mb-2 text-gray-800">AI Content Analysis Tool</h1>
-            <p class="text-center text-gray-600 mb-6">Upload a file or paste text and enter up to 6 keywords to generate a detailed analysis report with AI insights.</p>
+            <p class="text-center text-gray-600 mb-6">Upload a file, get AI keyword suggestions, and generate a detailed academic analysis report.</p>
 
             <!-- Input Form -->
             <div class="space-y-6">
                  <div>
-                    <label id="file-label" for="file-upload" class="block text-md font-medium text-gray-700 mb-2">Upload a File (DOCX, PDF)</label>
+                    <label id="file-label" for="file-upload" class="block text-md font-medium text-gray-700 mb-2">1. Upload a File (DOCX, PDF)</label>
                     <input type="file" id="file-upload" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" accept=".docx,.pdf">
                 </div>
-                <div class="relative flex py-2 items-center">
-                    <div class="flex-grow border-t border-gray-300"></div>
-                    <span class="flex-shrink mx-4 text-gray-500 font-semibold">OR</span>
-                    <div class="flex-grow border-t border-gray-300"></div>
+                <textarea id="main-text" class="hidden"></textarea>
+
+                <div id="ai-suggestion-section" class="hidden">
+                    <label class="block text-md font-medium text-gray-700 mb-2">2. Get AI Keyword Suggestions</label>
+                    <button id="suggest-keywords-btn" class="btn btn-suggest text-white font-bold py-2 px-6 rounded-full w-full md:w-auto">
+                        Suggest Keywords with AI
+                    </button>
+                    <div id="ai-keywords-container" class="mt-4 hidden">
+                         <p class="text-sm text-gray-600 mb-2">Click to select up to 6 keywords:</p>
+                         <div id="ai-keywords-boxes" class="flex flex-wrap gap-2"></div>
+                    </div>
                 </div>
+
                 <div>
-                    <label for="main-text" class="block text-md font-medium text-gray-700 mb-2">Paste Source Text</label>
-                    <textarea id="main-text" rows="10" class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition" placeholder="Paste the content you want to analyze here..."></textarea>
-                </div>
-                <div>
-                    <label for="keywords" class="block text-md font-medium text-gray-700 mb-2">Keywords (comma-separated, max 6)</label>
-                    <input type="text" id="keywords" class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition" placeholder="e.g., AI, Education, Future, Skills, Students, Technology">
+                    <label for="keywords" class="block text-md font-medium text-gray-700 mb-2">3. Final Keywords for Analysis (max 6)</label>
+                    <input type="text" id="keywords" class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition" placeholder="e.g., AI, Education, Technology...">
                 </div>
             </div>
 
             <!-- Action Buttons -->
             <div class="flex justify-center items-center gap-4 mt-8">
-                <button id="analyze-btn" class="btn-analyze text-white font-bold py-3 px-10 rounded-full text-lg">
+                <button id="analyze-btn" class="btn btn-analyze text-white font-bold py-3 px-10 rounded-full text-lg">
                     Analyze Content
                 </button>
-                 <button id="clear-btn" class="btn-clear text-white font-bold py-3 px-10 rounded-full text-lg">
-                    Clear
+                 <button id="clear-btn" class="btn btn-clear text-white font-bold py-3 px-10 rounded-full text-lg">
+                    Clear All
                 </button>
             </div>
              <div id="error-message" class="text-red-600 text-center mt-4 font-semibold"></div>
@@ -119,16 +183,16 @@
 
         <!-- Report Section -->
         <div id="report-section" class="report-section card rounded-2xl p-6 md:p-8 mt-8">
-            <!-- Report content will be dynamically inserted here -->
         </div>
     </div>
 
-    <!-- External Libraries for file processing -->
+    <!-- External Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.16/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script>
-        // Set up PDF.js worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
 
         // --- DOM Elements ---
@@ -141,32 +205,35 @@
         const errorMessage = document.getElementById('error-message');
         const fileInput = document.getElementById('file-upload');
         const fileLabel = document.getElementById('file-label');
-
+        const suggestKeywordsBtn = document.getElementById('suggest-keywords-btn');
+        const aiSuggestionSection = document.getElementById('ai-suggestion-section');
+        const aiKeywordsContainer = document.getElementById('ai-keywords-container');
+        const aiKeywordsBoxes = document.getElementById('ai-keywords-boxes');
+        
         // --- Event Listeners ---
         analyzeBtn.addEventListener('click', handleAnalysis);
-        clearBtn.addEventListener('click', handleClear);
+        clearBtn.addEventListener('click', () => handleClear(true));
         fileInput.addEventListener('change', handleFileUpload);
+        suggestKeywordsBtn.addEventListener('click', handleSuggestKeywords);
+        reportSection.addEventListener('click', handleReportActions);
         
         // --- Core Functions ---
-
         async function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
-
+            handleClear(false);
             const originalLabelText = fileLabel.textContent;
-            fileLabel.innerHTML = `<span class="animate-pulse">Processing...</span>`;
-            mainTextInput.value = ''; 
+            fileLabel.innerHTML = `<span class="animate-pulse">Processing File...</span>`;
             errorMessage.textContent = '';
-
-
             try {
+                let extractedText = '';
                 if (file.name.endsWith('.docx')) {
                     const arrayBuffer = await file.arrayBuffer();
                     const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-                    mainTextInput.value = result.value;
+                    extractedText = result.value;
                 } else if (file.name.endsWith('.pdf')) {
                     const fileReader = new FileReader();
-                    await new Promise((resolve, reject) => {
+                    extractedText = await new Promise((resolve, reject) => {
                         fileReader.onload = async function() {
                             try {
                                 const typedarray = new Uint8Array(this.result);
@@ -176,360 +243,352 @@
                                     const page = await pdf.getPage(i);
                                     const textContent = await page.getTextContent();
                                     textContent.items.sort((a, b) => a.transform[5] - b.transform[5] || a.transform[4] - b.transform[4]);
-                                    const pageText = textContent.items.map(item => item.str).join(' ');
-                                    fullText += pageText + '\n\n';
-                                }
-                                mainTextInput.value = fullText;
-                                resolve();
-                            } catch (err) {
-                                reject(err);
-                            }
+                                    fullText += textContent.items.map(item => item.str).join(' ') + '\n\n';
+                                } resolve(fullText);
+                            } catch (err) { reject(err); }
                         };
-                        fileReader.onerror = reject;
-                        fileReader.readAsArrayBuffer(file);
+                        fileReader.onerror = reject; fileReader.readAsArrayBuffer(file);
                     });
                 } else {
-                    showError('Unsupported file type. Please upload a DOCX or PDF file.');
+                    showError('Unsupported file type. Please upload a DOCX or PDF file.'); return;
                 }
+                mainTextInput.value = extractedText;
+                if(extractedText.trim()){ aiSuggestionSection.classList.remove('hidden'); }
             } catch (error) {
-                console.error('Error processing file:', error);
-                showError('Failed to process the file. It might be corrupted or protected.');
-                mainTextInput.value = '';
+                console.error('Error processing file:', error); showError('Failed to process the file. It may be corrupted or protected.'); mainTextInput.value = '';
+            } finally { fileLabel.textContent = originalLabelText; }
+        }
+
+        async function handleSuggestKeywords() {
+            const text = mainTextInput.value.trim();
+            if (!text) { showError("Please upload a file with content first."); return; }
+            suggestKeywordsBtn.disabled = true;
+            suggestKeywordsBtn.innerHTML = '<span class="animate-pulse">AI is thinking...</span>';
+            aiKeywordsBoxes.innerHTML = '';
+            try {
+                const suggestions = await fetchAiSuggestions(text);
+                aiKeywordsContainer.classList.remove('hidden');
+                suggestions.forEach(keyword => {
+                    const box = document.createElement('span'); box.textContent = keyword;
+                    box.className = 'keyword-suggestion py-1 px-3 rounded-full text-sm font-medium';
+                    box.addEventListener('click', () => toggleKeywordSelection(box));
+                    aiKeywordsBoxes.appendChild(box);
+                });
+            } catch (error) {
+                console.error("AI suggestion failed:", error); showError("Could not get AI suggestions at this time.");
             } finally {
-                fileLabel.textContent = originalLabelText;
+                suggestKeywordsBtn.disabled = false; suggestKeywordsBtn.innerHTML = 'Suggest Keywords with AI';
             }
         }
+
+        function toggleKeywordSelection(boxElement) {
+            const keyword = boxElement.textContent.trim();
+            let currentKeywords = keywordsInput.value.split(',').map(k => k.trim()).filter(k => k);
+            const isSelected = currentKeywords.includes(keyword);
+            if (isSelected) {
+                currentKeywords = currentKeywords.filter(k => k !== keyword); boxElement.classList.remove('selected');
+            } else {
+                if (currentKeywords.length < 6) { currentKeywords.push(keyword); boxElement.classList.add('selected'); }
+                else { showError("You can select a maximum of 6 keywords."); }
+            }
+            keywordsInput.value = currentKeywords.join(', ');
+        }
+
+        async function fetchAiSuggestions(text) {
+            const apiKey = ""; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const systemPrompt = `You are a content strategist. Analyze the text and identify up to 10 relevant keywords or two-word phrases. Respond with a JSON object: {"keywords": ["keyword1", "keyword2", ...]}.`;
+            const userQuery = `Text for analysis (first 5000 chars):\n"${text.substring(0, 5000)}"`;
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }], systemInstruction: { parts: [{ text: systemPrompt }] }, generationConfig: { responseMimeType: "application/json" }
+            };
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`API call failed: ${response.status}`);
+            const result = await response.json(); const candidate = result.candidates?.[0];
+            if (candidate?.content?.parts?.[0]?.text) {
+                const parsedJson = JSON.parse(candidate.content.parts[0].text); return Array.isArray(parsedJson.keywords) ? parsedJson.keywords : [];
+            } return [];
+        }
         
+        async function getAiSummary(text) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const systemPrompt = "You are a PhD-level academic analyst. Analyze the provided text and return a JSON object with these keys: 'title' (a compelling title), 'themes' (array of 3-5 key themes), 'summary' (a professional executive summary), 'academicComment' (commentary on style, tone, structure), 'conclusions' (array of 3-4 key conclusions as bullet points), and 'recommendations' (array of 3-4 actionable recommendations as bullet points).";
+            const userQuery = `Analyze this text:\n\n---\n\n${text.substring(0, 15000)}`;
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }], systemInstruction: { parts: [{ text: systemPrompt }] }, generationConfig: { responseMimeType: "application/json" }
+            };
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`API call failed: ${response.status}`);
+            const result = await response.json(); const candidate = result.candidates?.[0];
+            if (candidate?.content?.parts?.[0]?.text) {
+                try { return JSON.parse(candidate.content.parts[0].text); }
+                catch (e) { throw new Error("AI response format error."); }
+            } else { throw new Error("No valid AI content received."); }
+        }
+
+
         async function handleAnalysis() {
             errorMessage.textContent = '';
             const text = mainTextInput.value.trim();
-            const keywords = keywordsInput.value.trim()
-                .split(',')
-                .map(k => k.trim().toLowerCase())
-                .filter(k => k !== '');
-
-            // Validation
-            if (!text) {
-                showError('Source text cannot be empty. Please paste text or upload a file.');
-                return;
-            }
-            if (keywords.length === 0) {
-                showError('Please provide at least one keyword.');
-                return;
-            }
-            if (keywords.length > 6) {
-                showError('You can analyze a maximum of 6 keywords.');
-                return;
-            }
+            const keywords = keywordsInput.value.trim().split(',').map(k => k.trim()).filter(k => k !== '');
+            if (!text) { showError('Please upload a file to analyze.'); return; }
+            if (keywords.length === 0) { showError('Please provide at least one keyword for analysis.'); return; }
+            if (keywords.length > 6) { showError('You can analyze a maximum of 6 keywords.'); return; }
             
-            analyzeBtn.textContent = 'Analyzing...';
-            analyzeBtn.disabled = true;
-
-            // Generate standard report first
+            analyzeBtn.innerHTML = '<span class="animate-pulse">Analyzing...</span>'; analyzeBtn.disabled = true;
             const reportData = generateReportData(text, keywords);
-            renderReport(reportData); // Render initial report with AI placeholder
-            inputSection.style.display = 'none';
-            reportSection.style.display = 'block';
+            renderReport(reportData, keywords);
+            inputSection.style.display = 'none'; reportSection.style.display = 'block';
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            // Now, get AI insights
             try {
                 const aiInsights = await getAiSummary(text);
-                const aiContainer = document.getElementById('ai-insights-container');
-                if (aiContainer) {
-                    aiContainer.classList.remove('generating-ai');
-                    aiContainer.innerHTML = `
-                        <div class="p-4 rounded-lg">
-                            <h4 class="text-lg font-semibold text-gray-800 mb-2">Suggested Title</h4>
-                            <p class="text-gray-700 italic border-l-4 border-blue-300 pl-3">${aiInsights.title}</p>
-                        </div>
-                        <div class="p-4 rounded-lg mt-4">
-                            <h4 class="text-lg font-semibold text-gray-800 mb-2">Key Themes</h4>
-                            <ul class="list-disc list-inside text-gray-700 space-y-1 pl-1">
-                                ${aiInsights.themes.map(theme => `<li>${theme}</li>`).join('')}
-                            </ul>
-                        </div>
-                        <div class="p-4 rounded-lg mt-4">
-                            <h4 class="text-lg font-semibold text-gray-800 mb-2">Executive Summary</h4>
-                            <p class="text-gray-700 leading-relaxed">${aiInsights.summary}</p>
-                        </div>
-                        <div class="p-4 rounded-lg mt-4">
-                            <h4 class="text-lg font-semibold text-gray-800 mb-2">Academic Commentary</h4>
-                            <p class="text-gray-700 leading-relaxed">${aiInsights.academicComment}</p>
-                        </div>
-                    `;
-                }
+                document.getElementById('ai-title').innerHTML = aiInsights.title || "Not available";
+                document.getElementById('ai-summary').innerHTML = aiInsights.summary || "Not available";
+                document.getElementById('ai-themes').innerHTML = aiInsights.themes?.map(theme => `<li>${theme}</li>`).join('') || "<li>Not available</li>";
+                document.getElementById('ai-academic-comment').innerHTML = aiInsights.academicComment || "Not available";
+                document.getElementById('ai-conclusions').innerHTML = aiInsights.conclusions?.map(c => `<li>${c}</li>`).join('') || "<li>Not available</li>";
+                document.getElementById('ai-recommendations').innerHTML = aiInsights.recommendations?.map(r => `<li>${r}</li>`).join('') || "<li>Not available</li>";
+                document.getElementById('ai-qualitative-analysis').classList.remove('generating-ai');
+                document.getElementById('ai-conclusion-section').classList.remove('generating-ai');
+
             } catch (error) {
                 console.error('AI generation failed:', error);
-                const aiContainer = document.getElementById('ai-insights-container');
-                if (aiContainer) {
-                    aiContainer.innerHTML = `<p class="text-red-600 p-4">Could not generate AI insights at this time.</p>`;
-                }
+                document.getElementById('ai-qualitative-analysis').innerHTML = `<p class="text-red-600 p-4">Could not generate qualitative AI analysis.</p>`;
+                document.getElementById('ai-conclusion-section').innerHTML = `<p class="text-red-600 p-4">Could not generate AI conclusions.</p>`;
             } finally {
-                 analyzeBtn.textContent = 'Analyze Content';
-                 analyzeBtn.disabled = false;
+                 analyzeBtn.textContent = 'Analyze Content'; analyzeBtn.disabled = false;
             }
         }
-        
-        function handleClear() {
-            mainTextInput.value = '';
-            keywordsInput.value = '';
-            fileInput.value = '';
-            reportSection.innerHTML = '';
-            reportSection.style.display = 'none';
-            inputSection.style.display = 'block';
-            errorMessage.textContent = '';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        function handleClear(fullClear = true) {
+            mainTextInput.value = ''; keywordsInput.value = '';
+            if (fullClear) { fileInput.value = ''; }
+            reportSection.innerHTML = ''; reportSection.style.display = 'none';
+            inputSection.style.display = 'block'; errorMessage.textContent = '';
+            aiSuggestionSection.classList.add('hidden'); aiKeywordsContainer.classList.add('hidden');
+            aiKeywordsBoxes.innerHTML = ''; window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         
         function showError(message) {
-            errorMessage.textContent = message;
-        }
-
-        async function getAiSummary(text) {
-            const apiKey = ""; // Canvas will provide this
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-
-            const systemPrompt = "You are a professional content analyst with a PhD in academic writing. Analyze the following text and provide a concise, structured response in JSON format. The JSON object must contain four properties: 'title' (a suggested compelling title as a string), 'themes' (an array of 3-5 key themes as strings), 'summary' (a professional, one-paragraph executive summary of the text as a string), and 'academicComment' (a brief, one-paragraph academic commentary on the text's style, tone, structure, and potential audience or impact).";
-            
-            const userQuery = `Here is the text to analyze:\n\n---\n\n${text.substring(0, 15000)}`; // Truncate to avoid exceeding limits
-
-            const payload = {
-                contents: [{ parts: [{ text: userQuery }] }],
-                systemInstruction: {
-                    parts: [{ text: systemPrompt }]
-                },
-                generationConfig: {
-                    responseMimeType: "application/json",
-                }
-            };
-
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                throw new Error(`API call failed with status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            const candidate = result.candidates?.[0];
-
-            if (candidate && candidate.content?.parts?.[0]?.text) {
-                try {
-                    // The response text IS the JSON string
-                    return JSON.parse(candidate.content.parts[0].text);
-                } catch (e) {
-                    console.error("Failed to parse AI response as JSON:", e);
-                    throw new Error("AI response was not in the expected format.");
-                }
-            } else {
-                throw new Error("No valid content received from the AI model.");
-            }
+            errorMessage.textContent = message; setTimeout(() => { errorMessage.textContent = '' }, 4000);
         }
 
         function generateReportData(text, keywords) {
             const words = text.toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
             const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
-            const totalWords = words.length;
-            const totalSentences = sentences.length;
-            const totalSyllables = countSyllablesInText(text);
-
+            const totalWords = words.length, totalSentences = sentences.length, totalSyllables = countSyllablesInText(text);
             const keywordData = keywords.map(keyword => {
-                const regex = new RegExp(keyword, 'gi');
+                const regex = new RegExp(keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
                 const frequency = (text.match(regex) || []).length;
                 const density = totalWords > 0 ? (frequency / totalWords) * 100 : 0;
                 const context = findContext(sentences, keyword);
-                return {
-                    keyword,
-                    frequency,
-                    density: density.toFixed(2),
-                    context
-                };
+                return { keyword, frequency, density: density.toFixed(2), context };
             }).sort((a, b) => b.frequency - a.frequency);
-
             const readingTime = Math.ceil(totalWords / 200);
             const readability = calculateFleschKincaid(totalWords, totalSentences, totalSyllables);
-            
             return {
-                analysisDate: new Date().toLocaleString(),
-                keywordsUsed: keywords,
-                keywordPerformance: keywordData,
-                documentMetrics: {
-                    wordCount: totalWords,
-                    readingTime: `${readingTime} minute${readingTime === 1 ? '' : 's'}`,
-                    readabilityScore: `College Level (Flesch-Kincaid Grade Level: ${readability})`
-                }
+                analysisDate: new Date().toLocaleString(), keywordPerformance: keywordData,
+                documentMetrics: { wordCount: totalWords, readingTime: `${readingTime} min`, readabilityScore: `Grade ${readability}` }
             };
         }
         
-        function renderReport(data) {
-            const performanceRows = data.keywordPerformance.map(k => `
-                <tr class="border-b">
+        function renderReport(data, userKeywords) {
+            const frequencyRows = data.keywordPerformance.map(k => `
+                <tr class="border-b hover:bg-gray-50">
                     <td class="py-3 px-4 font-semibold">${k.keyword.charAt(0).toUpperCase() + k.keyword.slice(1)}</td>
                     <td class="py-3 px-4 text-center">${k.frequency}</td>
                     <td class="py-3 px-4 text-center">${k.density}%</td>
-                </tr>
-            `).join('');
+                </tr>`).join('');
 
             const maxFreq = Math.max(...data.keywordPerformance.map(k => k.frequency), 1);
             const distributionChart = data.keywordPerformance.map(k => `
-                <div class="flex flex-col items-center">
-                    <div class="chart-bar-container flex items-end justify-center w-12">
-                        <div class="chart-bar w-full rounded-t-md" style="height: ${(k.frequency / maxFreq) * 100}%;" title="Count: ${k.frequency}"></div>
+                <div class="grid grid-cols-4 items-center gap-2 mb-2">
+                    <span class="font-semibold text-gray-700 col-span-1 text-right">${k.keyword.charAt(0).toUpperCase() + k.keyword.slice(1)}</span>
+                    <div class="col-span-3 bg-gray-200 rounded-full h-6">
+                        <div class="horizontal-bar h-6 flex items-center" style="width: ${(k.frequency / maxFreq) * 100}%;"><span class="pl-2 font-bold text-sm">${k.frequency}</span></div>
                     </div>
-                    <span class="text-sm mt-2 font-medium">${k.keyword.charAt(0).toUpperCase() + k.keyword.slice(1)}</span>
-                </div>
-            `).join('');
-            
-            const contextSections = data.keywordPerformance.map((k, index) => `
-                <div class="mt-6">
-                    <h4 class="text-xl font-semibold" dir="auto">${index + 1}. "${k.keyword.charAt(0).toUpperCase() + k.keyword.slice(1)}"</h4>
-                    <p class="mb-3">
-                        <span class="font-semibold">Sentiment:</span> 
-                        <span class="font-bold ${k.context.sentimentClass}">${k.context.sentiment}</span>
-                    </p>
-                    <div class="pl-4 border-l-4 border-blue-300 space-y-2 text-gray-700 italic">
-                        ${k.context.examples.length > 0 ? k.context.examples.map(ex => `<p dir="auto">"...${ex}..."</p>`).join('') : '<p dir="auto">No specific context examples found.</p>'}
-                    </div>
-                </div>
-            `).join('');
+                </div>`).join('');
 
+            const sentimentRows = data.keywordPerformance.map(k => {
+                const examplesList = k.context.examples.map(ex => `<li class="mb-1">" ...${ex}... "</li>`).join('');
+                const examplesHtml = k.context.examples.length > 0 ? `<ul class="list-disc list-inside pl-2">${examplesList}</ul>` : 'N/A';
+                 return `<tr class="border-b hover:bg-gray-50">
+                    <td class="py-3 px-4 font-semibold">${k.keyword.charAt(0).toUpperCase() + k.keyword.slice(1)}</td>
+                    <td class="py-3 px-4"><span class="${k.context.sentimentClass}">${k.context.sentiment}</span></td>
+                    <td class="py-3 px-4 italic text-gray-600">${examplesHtml}</td>
+                </tr>`;
+            }).join('');
+            
             reportSection.innerHTML = `
-                <div class="space-y-10">
-                    <!-- Section 1: Overview -->
-                    <section>
-                        <h2 class="text-3xl font-bold border-b-2 border-blue-300 pb-2 mb-4">Content Analysis Report</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-                            <p><strong class="font-semibold text-gray-800">Document Title:</strong> User-Provided Text</p>
-                            <p><strong class="font-semibold text-gray-800">Date of Analysis:</strong> ${data.analysisDate}</p>
+                <div class="space-y-12">
+                    <section id="report-intro">
+                        <div class="flex justify-between items-start"><h2 class="report-h2">1.0 Introduction</h2><button class="copy-btn" data-target="report-intro" title="Copy Section"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375V9.375a2.25 2.25 0 00-2.25-2.25H1.5A2.25 2.25 0 00-.75 9.375v10.5A2.25 2.25 0 001.5 22.125h10.5a2.25 2.25 0 002.25-2.25z" /></svg><span class="copy-text">Copy</span></button></div>
+                        <p class="mb-4 text-gray-700 leading-relaxed">This report provides a comprehensive analysis of the user-provided document, conducted on <strong class="font-semibold">${data.analysisDate}</strong>. The analysis employs a mixed-method approach, combining quantitative metrics with qualitative, AI-driven insights to evaluate the text based on a selection of user-defined keywords.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                            <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Total Word Count</p><p class="text-2xl font-bold">${data.documentMetrics.wordCount}</p></div>
+                            <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Est. Reading Time</p><p class="text-2xl font-bold">${data.documentMetrics.readingTime}</p></div>
+                            <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Readability Level</p><p class="text-2xl font-bold">${data.documentMetrics.readabilityScore}</p></div>
                         </div>
-                        <p class="mt-2"><strong class="font-semibold text-gray-800">Analysis Keywords:</strong> ${data.keywordsUsed.map(k => `"${k.charAt(0).toUpperCase() + k.slice(1)}"`).join(', ')}</p>
                     </section>
                     
-                    <!-- Section 2: AI Insights -->
-                    <section>
-                        <h2 class="text-3xl font-bold border-b-2 border-blue-300 pb-2 mb-4">✨ AI-Powered Insights</h2>
-                        <div id="ai-insights-container" class="ai-section rounded-xl p-4 generating-ai">
-                            <p class="text-center text-gray-600 font-semibold animate-pulse">Generating AI insights... please wait.</p>
+                    <section id="report-quant">
+                        <div class="flex justify-between items-start"><h2 class="report-h2">2.0 Quantitative Analysis</h2><button class="copy-btn" data-target="report-quant" title="Copy Section"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375V9.375a2.25 2.25 0 00-2.25-2.25H1.5A2.25 2.25 0 00-.75 9.375v10.5A2.25 2.25 0 001.5 22.125h10.5a2.25 2.25 0 002.25-2.25z" /></svg><span class="copy-text">Copy</span></button></div>
+                        <h3 class="report-h3">2.1 Keyword Frequency & Density</h3>
+                        <div class="overflow-x-auto rounded-lg border"><table class="w-full text-left"><thead class="bg-gray-100"><tr><th class="py-3 px-4 font-bold uppercase text-sm">Keyword</th><th class="py-3 px-4 font-bold uppercase text-sm text-center">Frequency</th><th class="py-3 px-4 font-bold uppercase text-sm text-center">Density (%)</th></tr></thead><tbody>${frequencyRows}</tbody></table></div>
+                        <h3 class="report-h3 mt-8">2.2 Keyword Distribution Visualized</h3>
+                        <div class="p-4 rounded-lg">${distributionChart}</div>
+                    </section>
+
+                    <section id="report-qual">
+                        <div class="flex justify-between items-start"><h2 class="report-h2">3.0 Qualitative Analysis</h2><button class="copy-btn" data-target="report-qual" title="Copy Section"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375V9.375a2.25 2.25 0 00-2.25-2.25H1.5A2.25 2.25 0 00-.75 9.375v10.5A2.25 2.25 0 001.5 22.125h10.5a2.25 2.25 0 002.25-2.25z" /></svg><span class="copy-text">Copy</span></button></div>
+                        <h3 class="report-h3">3.1 Context & Sentiment</h3>
+                        <p class="mb-4 text-gray-700">The following table assesses the contextual sentiment surrounding each keyword, providing an example from the text for illustration.</p>
+                        <div class="overflow-x-auto rounded-lg border"><table class="w-full text-left"><thead class="bg-gray-100"><tr><th class="py-3 px-4 font-bold uppercase text-sm">Keyword</th><th class="py-3 px-4 font-bold uppercase text-sm">Sentiment</th><th class="py-3 px-4 font-bold uppercase text-sm">Contextual Example</th></tr></thead><tbody>${sentimentRows}</tbody></table></div>
+                        <div id="ai-qualitative-analysis" class="ai-section rounded-xl p-4 mt-8 generating-ai">
+                            <h3 class="report-h3">3.2 AI-Powered Thematic & Stylistic Analysis</h3>
+                            <div class="p-4 rounded-lg"><h4 class="text-lg font-semibold text-gray-800 mb-2">Suggested Title</h4><p id="ai-title" class="text-gray-700 italic border-l-4 border-blue-300 pl-3 animate-pulse bg-gray-300 rounded w-3/4 min-h-[1.5rem]"></p></div>
+                            <div class="p-4 rounded-lg mt-4"><h4 class="text-lg font-semibold text-gray-800 mb-2">Executive Summary</h4><p id="ai-summary" class="text-gray-700 leading-relaxed animate-pulse bg-gray-300 rounded w-full min-h-[6rem]"></p></div>
+                            <div class="p-4 rounded-lg mt-4"><h4 class="text-lg font-semibold text-gray-800 mb-2">Key Themes</h4><ul id="ai-themes" class="list-disc list-inside text-gray-700 space-y-2 pl-1 animate-pulse"><li class="bg-gray-300 min-h-[1rem] w-1/2 rounded"></li><li class="bg-gray-300 min-h-[1rem] w-2/3 rounded"></li></ul></div>
+                            <div class="p-4 rounded-lg mt-4"><h4 class="text-lg font-semibold text-gray-800 mb-2">Academic Commentary</h4><p id="ai-academic-comment" class="text-gray-700 leading-relaxed animate-pulse bg-gray-300 rounded w-full min-h-[5rem]"></p></div>
                         </div>
                     </section>
 
-                    <!-- Section 3: Keyword Performance -->
-                    <section>
-                        <h2 class="text-3xl font-bold border-b-2 border-blue-300 pb-2 mb-4">📊 Keyword Performance</h2>
+                    <section id="ai-conclusion-section" class="generating-ai">
+                        <div class="flex justify-between items-start"><h2 class="report-h2">4.0 Conclusion & Recommendations</h2><button class="copy-btn" data-target="ai-conclusion-section" title="Copy Section"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375V9.375a2.25 2.25 0 00-2.25-2.25H1.5A2.25 2.25 0 00-.75 9.375v10.5A2.25 2.25 0 001.5 22.125h10.5a2.25 2.25 0 002.25-2.25z" /></svg><span class="copy-text">Copy</span></button></div>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             <div>
-                                <h3 class="text-xl font-semibold mb-3">Frequency and Density</h3>
-                                <div class="overflow-x-auto rounded-lg border">
-                                    <table class="w-full text-left">
-                                        <thead class="bg-gray-100">
-                                            <tr>
-                                                <th class="py-3 px-4 font-bold uppercase text-sm">Keyword</th>
-                                                <th class="py-3 px-4 font-bold uppercase text-sm text-center">Frequency (Count)</th>
-                                                <th class="py-3 px-4 font-bold uppercase text-sm text-center">Density (%)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>${performanceRows}</tbody>
-                                    </table>
-                                </div>
+                                <h3 class="report-h3">4.1 Conclusion</h3>
+                                <ul id="ai-conclusions" class="list-disc list-inside text-gray-700 space-y-2 pl-1 animate-pulse"><li class="bg-gray-300 min-h-[1rem] w-5/6 rounded"></li><li class="bg-gray-300 min-h-[1rem] w-full rounded"></li><li class="bg-gray-300 min-h-[1rem] w-4/6 rounded"></li></ul>
                             </div>
                             <div>
-                                <h3 class="text-xl font-semibold mb-3">Keyword Distribution</h3>
-                                <div class="card p-4 rounded-lg flex justify-around items-end h-full">
-                                    ${distributionChart}
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                    
-                    <!-- Section 4: Context and Sentiment -->
-                    <section>
-                        <h2 class="text-3xl font-bold border-b-2 border-blue-300 pb-2 mb-4">💬 Context and Sentiment</h2>
-                        ${contextSections}
-                    </section>
-
-                    <!-- Section 5: Document Metrics -->
-                    <section>
-                        <h2 class="text-3xl font-bold border-b-2 border-blue-300 pb-2 mb-4">📝 Overall Document Metrics</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div class="bg-gray-100 p-4 rounded-lg text-center">
-                                <p class="text-sm text-gray-600">Total Word Count</p>
-                                <p class="text-2xl font-bold">${data.documentMetrics.wordCount}</p>
-                            </div>
-                             <div class="bg-gray-100 p-4 rounded-lg text-center">
-                                <p class="text-sm text-gray-600">Estimated Reading Time</p>
-                                <p class="text-2xl font-bold">${data.documentMetrics.readingTime}</p>
-                            </div>
-                             <div class="bg-gray-100 p-4 rounded-lg text-center">
-                                <p class="text-sm text-gray-600">Readability Score</p>
-                                <p class="text-xl font-bold">${data.documentMetrics.readabilityScore}</p>
+                                <h3 class="report-h3">4.2 Recommendations</h3>
+                                <ul id="ai-recommendations" class="list-disc list-inside text-gray-700 space-y-2 pl-1 animate-pulse"><li class="bg-gray-300 min-h-[1rem] w-full rounded"></li><li class="bg-gray-300 min-h-[1rem] w-5/6 rounded"></li><li class="bg-gray-300 min-h-[1rem] w-4/6 rounded"></li></ul>
                             </div>
                         </div>
                     </section>
                 </div>
-                <div class="flex justify-center mt-10">
-                    <button onclick="handleClear()" class="btn-clear text-white font-bold py-3 px-10 rounded-full text-lg">Start New Analysis</button>
-                </div>
+                <div class="flex justify-center items-center gap-4 mt-12"><button id="export-btn" class="btn btn-analyze text-white font-bold py-3 px-10 rounded-full text-lg">Export as PDF</button><button id="new-analysis-btn" class="btn btn-clear text-white font-bold py-3 px-10 rounded-full text-lg">Start New Analysis</button></div>
             `;
+            document.getElementById('export-btn').addEventListener('click', handleExportPdf);
+            document.getElementById('new-analysis-btn').addEventListener('click', () => handleClear(true));
+        }
+        
+        function handleReportActions(event) {
+            const copyBtn = event.target.closest('.copy-btn');
+            if (!copyBtn) return;
+            
+            const targetId = copyBtn.dataset.target;
+            const sectionToCopy = document.getElementById(targetId);
+            if (sectionToCopy) {
+                const textToCopy = sectionToCopy.innerText;
+                const textArea = document.createElement("textarea");
+                textArea.value = textToCopy;
+                
+                // Make the textarea out of sight
+                textArea.style.position = 'fixed';
+                textArea.style.top = 0;
+                textArea.style.left = 0;
+                textArea.style.width = '2em';
+                textArea.style.height = '2em';
+                textArea.style.padding = 0;
+                textArea.style.border = 'none';
+                textArea.style.outline = 'none';
+                textArea.style.boxShadow = 'none';
+                textArea.style.background = 'transparent';
+
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        const copyText = copyBtn.querySelector('.copy-text');
+                        if (copyText) {
+                           const originalText = copyText.textContent;
+                           copyText.textContent = 'Copied!';
+                           copyBtn.style.backgroundColor = '#48bb78'; // green-500
+                           setTimeout(() => {
+                               copyText.textContent = originalText;
+                               copyBtn.style.backgroundColor = '';
+                           }, 2000);
+                        }
+                    } else {
+                        showError('Could not copy text.');
+                    }
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                    showError('Could not copy text.');
+                }
+
+                document.body.removeChild(textArea);
+            }
         }
 
-        // --- Helper Functions ---
+        async function handleExportPdf() {
+            const exportBtn = document.getElementById('export-btn');
+            exportBtn.textContent = 'Preparing PDF...';
+            exportBtn.disabled = true;
+
+            const reportElement = document.getElementById('report-section');
+            
+            reportElement.classList.add('pdf-export-prepare');
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const canvas = await html2canvas(reportElement, {
+                    scale: 2, useCORS: true, logging: false, scrollY: -window.scrollY,
+                    windowWidth: reportElement.scrollWidth, windowHeight: reportElement.scrollHeight
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth(); const pdfHeight = pdf.internal.pageSize.getHeight();
+                const canvasWidth = canvas.width; const canvasHeight = canvas.height;
+                const ratio = canvasWidth / canvasHeight;
+                const imgWidth = pdfWidth; const imgHeight = imgWidth / ratio;
+                let heightLeft = imgHeight; let position = 0;
+
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pdfHeight;
+
+                while (heightLeft > 0) {
+                    position = -heightLeft; pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pdfHeight;
+                }
+                pdf.save('content-analysis-report.pdf');
+            } catch (err) {
+                console.error("PDF export failed:", err); showError("Sorry, there was an error creating the PDF.");
+            } finally {
+                reportElement.classList.remove('pdf-export-prepare');
+                exportBtn.textContent = 'Export as PDF';
+                exportBtn.disabled = false;
+            }
+        }
         
         function findContext(sentences, keyword) {
             const positiveWords = ['good', 'great', 'excellent', 'positive', 'benefit', 'advantage', 'quality', 'success', 'prepare', 'invest', 'revolution', 'adapt', 'جيد', 'رائع', 'ممتاز', 'إيجابي', 'فائدة', 'ميزة'];
             const negativeWords = ['bad', 'poor', 'negative', 'disadvantage', 'problem', 'issue', 'risk', 'fail', 'necessary', 'depend', 'سيء', 'ضعيف', 'سلبي', 'مشكلة', 'خطر', 'فشل'];
             let sentimentScore = 0;
-
-            const examples = sentences.filter(s => s.toLowerCase().includes(keyword.toLowerCase()))
-                .slice(0, 3)
-                .map(s => {
-                    const wordsInSentence = s.toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
-                    wordsInSentence.forEach(word => {
-                        if (positiveWords.includes(word)) sentimentScore++;
-                        if (negativeWords.includes(word)) sentimentScore--;
-                    });
-                    const regex = new RegExp(`(${keyword})`, 'gi');
-                    return s.trim().replace(regex, `<strong class="font-bold text-blue-600">$1</strong>`);
-                });
-            
-            let sentiment = 'Neutral';
-            let sentimentClass = 'sentiment-neutral';
-            if (sentimentScore > 0) {
-                sentiment = 'Positive';
-                sentimentClass = 'sentiment-positive';
-            } else if (sentimentScore < 0) {
-                sentiment = 'Negative';
-                sentimentClass = 'sentiment-negative';
-            }
-
+            const examples = sentences.filter(s => s.toLowerCase().includes(keyword.toLowerCase())).slice(0, 3).map(s => {
+                const wordsInSentence = s.toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+                wordsInSentence.forEach(word => { if (positiveWords.includes(word)) sentimentScore++; if (negativeWords.includes(word)) sentimentScore--; });
+                const safeKeyword = keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'); const regex = new RegExp(`(${safeKeyword})`, 'gi');
+                return s.trim().replace(regex, `<strong class="font-bold text-blue-600">$1</strong>`);
+            });
+            let sentiment = 'Neutral', sentimentClass = 'sentiment-neutral';
+            if (sentimentScore > 0) { sentiment = 'Positive'; sentimentClass = 'sentiment-positive'; }
+            else if (sentimentScore < 0) { sentiment = 'Negative'; sentimentClass = 'sentiment-negative'; }
             return { examples, sentiment, sentimentClass };
         }
         
-        function calculateFleschKincaid(words, sentences, syllables) {
-            if (words === 0 || sentences === 0) return 'N/A';
-            const gradeLevel = 0.39 * (words / sentences) + 11.8 * (syllables / words) - 15.59;
-            return gradeLevel.toFixed(1);
-        }
-
-        function countSyllablesInWord(word) {
-            word = word.toLowerCase();
-            if (word.length <= 3) return 1;
-            word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
-            word = word.replace(/^y/, '');
-            const syllables = word.match(/[aeiouy]{1,2}/g);
-            return syllables ? syllables.length : 1;
-        }
-        
-        function countSyllablesInText(text) {
-            const words = text.match(/\b\w+\b/g) || [];
-            return words.reduce((acc, word) => acc + countSyllablesInWord(word), 0);
-        }
-
+        function calculateFleschKincaid(words, sentences, syllables) { if (words === 0 || sentences === 0) return 'N/A'; return (0.39 * (words / sentences) + 11.8 * (syllables / words) - 15.59).toFixed(1); }
+        function countSyllablesInWord(word) { word = word.toLowerCase(); if (word.length <= 3) return 1; word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, ''); word = word.replace(/^y/, ''); const syllables = word.match(/[aeiouy]{1,2}/g); return syllables ? syllables.length : 1; }
+        function countSyllablesInText(text) { const words = text.match(/\b\w+\b/g) || []; return words.reduce((acc, word) => acc + countSyllablesInWord(word), 0); }
     </script>
 </body>
 </html>
-
 
