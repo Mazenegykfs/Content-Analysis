@@ -70,6 +70,19 @@
             border-color: #007bff;
             font-weight: 600;
         }
+        .toggle-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ced4da;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .toggle-btn.selected {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+            font-weight: 600;
+        }
         .report-section { display: none; }
         .sentiment-positive { color: #28a745; font-weight: 600; }
         .sentiment-negative { color: #dc3545; font-weight: 600; }
@@ -147,24 +160,40 @@
             <!-- Input Form -->
             <div class="space-y-6">
                  <div>
-                    <label id="file-label" for="file-upload" class="block text-md font-medium text-gray-700 mb-2">1. Upload a File (DOCX, PDF)</label>
+                    <label class="block text-md font-medium text-gray-700 mb-2">1. Select Analysis Type</label>
+                    <div id="analysis-type-selector" class="flex rounded-md shadow-sm">
+                        <button data-type="literal" class="toggle-btn selected rounded-l-md">Literal Keyword</button>
+                        <button data-type="semantic" class="toggle-btn rounded-r-md">Semantic Value</button>
+                    </div>
+                </div>
+
+                 <div>
+                    <label class="block text-md font-medium text-gray-700 mb-2">2. Select Analysis Language</label>
+                    <div id="language-selector" class="flex rounded-md shadow-sm">
+                        <button data-lang="en" class="toggle-btn selected rounded-l-md">English</button>
+                        <button data-lang="ar" class="toggle-btn rounded-r-md">Arabic</button>
+                    </div>
+                </div>
+
+                 <div>
+                    <label id="file-label" for="file-upload" class="block text-md font-medium text-gray-700 mb-2">3. Upload a File (DOCX, PDF)</label>
                     <input type="file" id="file-upload" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" accept=".docx,.pdf">
                 </div>
                 <textarea id="main-text" class="hidden"></textarea>
 
                 <div id="ai-suggestion-section" class="hidden">
-                    <label class="block text-md font-medium text-gray-700 mb-2">2. Get AI Keyword Suggestions</label>
+                    <label class="block text-md font-medium text-gray-700 mb-2">4. Get AI Keyword Suggestions</label>
                     <button id="suggest-keywords-btn" class="btn btn-suggest text-white font-bold py-2 px-6 rounded-full w-full md:w-auto">
                         Suggest Keywords with AI
                     </button>
                     <div id="ai-keywords-container" class="mt-4 hidden">
-                         <p class="text-sm text-gray-600 mb-2">Click to select up to 6 keywords:</p>
+                         <p class="text-sm text-gray-600 mb-2">Click to select up to 6 keywords/values:</p>
                          <div id="ai-keywords-boxes" class="flex flex-wrap gap-2"></div>
                     </div>
                 </div>
 
                 <div>
-                    <label for="keywords" class="block text-md font-medium text-gray-700 mb-2">3. Final Keywords for Analysis (max 6)</label>
+                    <label for="keywords" class="block text-md font-medium text-gray-700 mb-2">5. Final Keywords/Values for Analysis (max 6)</label>
                     <input type="text" id="keywords" class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition" placeholder="e.g., AI, Education, Technology...">
                 </div>
             </div>
@@ -195,6 +224,9 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
 
+        let currentLanguage = 'en';
+        let currentAnalysisType = 'literal';
+
         // --- DOM Elements ---
         const analyzeBtn = document.getElementById('analyze-btn');
         const clearBtn = document.getElementById('clear-btn');
@@ -209,6 +241,8 @@
         const aiSuggestionSection = document.getElementById('ai-suggestion-section');
         const aiKeywordsContainer = document.getElementById('ai-keywords-container');
         const aiKeywordsBoxes = document.getElementById('ai-keywords-boxes');
+        const languageSelector = document.getElementById('language-selector');
+        const analysisTypeSelector = document.getElementById('analysis-type-selector');
         
         // --- Event Listeners ---
         analyzeBtn.addEventListener('click', handleAnalysis);
@@ -216,6 +250,22 @@
         fileInput.addEventListener('change', handleFileUpload);
         suggestKeywordsBtn.addEventListener('click', handleSuggestKeywords);
         reportSection.addEventListener('click', handleReportActions);
+        
+        languageSelector.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                currentLanguage = e.target.dataset.lang;
+                languageSelector.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+                e.target.classList.add('selected');
+            }
+        });
+        
+        analysisTypeSelector.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                currentAnalysisType = e.target.dataset.type;
+                analysisTypeSelector.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+                e.target.classList.add('selected');
+            }
+        });
         
         // --- Core Functions ---
         async function handleFileUpload(event) {
@@ -295,7 +345,7 @@
         }
 
         async function fetchAiSuggestions(text) {
-            const apiKey = ""; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const apiKey = "AIzaSyCEzJKpJrQ8Qwx_nKZq003hXF0cgImkMC8"; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
             const systemPrompt = `You are a content strategist. Analyze the text and identify up to 10 relevant keywords or two-word phrases. Respond with a JSON object: {"keywords": ["keyword1", "keyword2", ...]}.`;
             const userQuery = `Text for analysis (first 5000 chars):\n"${text.substring(0, 5000)}"`;
             const payload = {
@@ -308,9 +358,37 @@
                 const parsedJson = JSON.parse(candidate.content.parts[0].text); return Array.isArray(parsedJson.keywords) ? parsedJson.keywords : [];
             } return [];
         }
+
+        async function performSemanticAnalysis(text, values) {
+            const apiKey = "AIzaSyCEzJKpJrQ8Qwx_nKZq003hXF0cgImkMC8";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const systemPrompt = "You are an expert in semantic analysis. Analyze the text for the presence of underlying concepts or values. For each value, identify relevant passages, summarize the context, determine the sentiment, and count distinct passages discussing it. Respond with a JSON object containing a single key 'analysis' which is an array of objects.";
+            const userQuery = `Analyze the following text based on these values: [${values.join(', ')}]. For each value, provide a JSON object with these keys: 'value' (the keyword), 'relevanceScore' (a number from 0 to 10 indicating how prominently the value is discussed), 'contextSummary' (a 2-3 sentence summary of how the text discusses this value), 'examples' (an array of up to 3 direct quotes from the text that best represent this value), and 'sentiment' ('Positive', 'Negative', or 'Neutral').`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery + "\n\nTEXT:\n" + text.substring(0, 15000) }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: { responseMimeType: "application/json" }
+            };
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`API call failed: ${response.status}`);
+            const result = await response.json();
+            const candidate = result.candidates?.[0];
+            if (candidate?.content?.parts?.[0]?.text) {
+                try {
+                    const parsed = JSON.parse(candidate.content.parts[0].text);
+                    return parsed.analysis || [];
+                } catch (e) {
+                    console.error("Error parsing semantic analysis response:", e);
+                    throw new Error("AI response format error.");
+                }
+            } else {
+                throw new Error("No valid AI content received for semantic analysis.");
+            }
+        }
         
         async function getAiSummary(text) {
-            const apiKey = "";
+            const apiKey = "AIzaSyCEzJKpJrQ8Qwx_nKZq003hXF0cgImkMC8";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
             const systemPrompt = "You are a PhD-level academic analyst. Analyze the provided text and return a JSON object with these keys: 'title' (a compelling title), 'themes' (array of 3-5 key themes), 'summary' (a professional executive summary), 'academicComment' (commentary on style, tone, structure), 'conclusions' (array of 3-4 key conclusions as bullet points), and 'recommendations' (array of 3-4 actionable recommendations as bullet points).";
             const userQuery = `Analyze this text:\n\n---\n\n${text.substring(0, 15000)}`;
@@ -326,38 +404,66 @@
             } else { throw new Error("No valid AI content received."); }
         }
 
-
         async function handleAnalysis() {
             errorMessage.textContent = '';
             const text = mainTextInput.value.trim();
             const keywords = keywordsInput.value.trim().split(',').map(k => k.trim()).filter(k => k !== '');
             if (!text) { showError('Please upload a file to analyze.'); return; }
-            if (keywords.length === 0) { showError('Please provide at least one keyword for analysis.'); return; }
-            if (keywords.length > 6) { showError('You can analyze a maximum of 6 keywords.'); return; }
+            if (keywords.length === 0) { showError('Please provide at least one keyword/value for analysis.'); return; }
+            if (keywords.length > 6) { showError('You can analyze a maximum of 6 keywords/values.'); return; }
             
-            analyzeBtn.innerHTML = '<span class="animate-pulse">Analyzing...</span>'; analyzeBtn.disabled = true;
-            const reportData = generateReportData(text, keywords);
-            renderReport(reportData, keywords);
-            inputSection.style.display = 'none'; reportSection.style.display = 'block';
+            analyzeBtn.innerHTML = '<span class="animate-pulse">Analyzing...</span>';
+            analyzeBtn.disabled = true;
+            inputSection.style.display = 'none';
+            reportSection.style.display = 'block';
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
+            if (currentAnalysisType === 'literal') {
+                const reportData = generateReportData(text, keywords, currentLanguage);
+                renderLiteralReport(reportData);
+            } else { // Semantic Analysis
+                reportSection.innerHTML = `<div class="text-center p-8"><h2 class="text-2xl font-bold animate-pulse">Performing AI Semantic Analysis...</h2><p class="mt-2 text-gray-600">This may take a moment.</p></div>`;
+                try {
+                    const semanticData = await performSemanticAnalysis(text, keywords);
+                    renderSemanticReport(semanticData, text);
+                } catch (e) {
+                    showError("Failed to perform semantic analysis. " + e.message);
+                    handleClear(false);
+                }
+            }
+
+            // Common part: Fetch overall AI summary for both report types
             try {
                 const aiInsights = await getAiSummary(text);
-                document.getElementById('ai-title').innerHTML = aiInsights.title || "Not available";
-                document.getElementById('ai-summary').innerHTML = aiInsights.summary || "Not available";
-                document.getElementById('ai-themes').innerHTML = aiInsights.themes?.map(theme => `<li>${theme}</li>`).join('') || "<li>Not available</li>";
-                document.getElementById('ai-academic-comment').innerHTML = aiInsights.academicComment || "Not available";
-                document.getElementById('ai-conclusions').innerHTML = aiInsights.conclusions?.map(c => `<li>${c}</li>`).join('') || "<li>Not available</li>";
-                document.getElementById('ai-recommendations').innerHTML = aiInsights.recommendations?.map(r => `<li>${r}</li>`).join('') || "<li>Not available</li>";
-                document.getElementById('ai-qualitative-analysis').classList.remove('generating-ai');
-                document.getElementById('ai-conclusion-section').classList.remove('generating-ai');
-
+                 // The elements to update might not exist until a report is rendered
+                const updateAIInsights = () => {
+                    const titleEl = document.getElementById('ai-title');
+                    if (titleEl) { // Check if the elements are on the page
+                        titleEl.innerHTML = aiInsights.title || "Not available";
+                        document.getElementById('ai-summary').innerHTML = aiInsights.summary || "Not available";
+                        document.getElementById('ai-themes').innerHTML = aiInsights.themes?.map(theme => `<li>${theme}</li>`).join('') || "<li>Not available</li>";
+                        document.getElementById('ai-academic-comment').innerHTML = aiInsights.academicComment || "Not available";
+                        document.getElementById('ai-conclusions').innerHTML = aiInsights.conclusions?.map(c => `<li>${c}</li>`).join('') || "<li>Not available</li>";
+                        document.getElementById('ai-recommendations').innerHTML = aiInsights.recommendations?.map(r => `<li>${r}</li>`).join('') || "<li>Not available</li>";
+                        document.getElementById('ai-qualitative-analysis').classList.remove('generating-ai');
+                        document.getElementById('ai-conclusion-section').classList.remove('generating-ai');
+                    }
+                };
+                // A small delay to ensure the DOM is updated by the rendering functions
+                setTimeout(updateAIInsights, 100);
             } catch (error) {
                 console.error('AI generation failed:', error);
-                document.getElementById('ai-qualitative-analysis').innerHTML = `<p class="text-red-600 p-4">Could not generate qualitative AI analysis.</p>`;
-                document.getElementById('ai-conclusion-section').innerHTML = `<p class="text-red-600 p-4">Could not generate AI conclusions.</p>`;
+                const updateAIErrors = () => {
+                     const aiQualEl = document.getElementById('ai-qualitative-analysis');
+                     if (aiQualEl) {
+                        aiQualEl.innerHTML = `<p class="text-red-600 p-4">Could not generate qualitative AI analysis.</p>`;
+                        document.getElementById('ai-conclusion-section').innerHTML = `<p class="text-red-600 p-4">Could not generate AI conclusions.</p>`;
+                     }
+                };
+                setTimeout(updateAIErrors, 100);
             } finally {
-                 analyzeBtn.textContent = 'Analyze Content'; analyzeBtn.disabled = false;
+                 analyzeBtn.textContent = 'Analyze Content';
+                 analyzeBtn.disabled = false;
             }
         }
 
@@ -374,26 +480,29 @@
             errorMessage.textContent = message; setTimeout(() => { errorMessage.textContent = '' }, 4000);
         }
 
-        function generateReportData(text, keywords) {
+        function generateReportData(text, keywords, language) {
             const words = text.toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
-            const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+            const sentences = text.match(/[^.!?؟]+[.!?؟]+/g) || [];
             const totalWords = words.length, totalSentences = sentences.length, totalSyllables = countSyllablesInText(text);
             const keywordData = keywords.map(keyword => {
-                const regex = new RegExp(keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+                const safeKeyword = keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                const regex = new RegExp(`\\b${safeKeyword}\\b`, 'gi');
                 const frequency = (text.match(regex) || []).length;
                 const density = totalWords > 0 ? (frequency / totalWords) * 100 : 0;
-                const context = findContext(sentences, keyword);
+                const context = findContext(sentences, keyword, language);
                 return { keyword, frequency, density: density.toFixed(2), context };
             }).sort((a, b) => b.frequency - a.frequency);
             const readingTime = Math.ceil(totalWords / 200);
-            const readability = calculateFleschKincaid(totalWords, totalSentences, totalSyllables);
+            const readabilityValue = language === 'en' ? calculateFleschKincaid(totalWords, totalSentences, totalSyllables) : 'N/A (English Only)';
+            const readabilityScore = language === 'en' ? `Grade ${readabilityValue}` : readabilityValue;
+            
             return {
                 analysisDate: new Date().toLocaleString(), keywordPerformance: keywordData,
-                documentMetrics: { wordCount: totalWords, readingTime: `${readingTime} min`, readabilityScore: `Grade ${readability}` }
+                documentMetrics: { wordCount: totalWords, readingTime: `${readingTime} min`, readabilityScore: readabilityScore }
             };
         }
         
-        function renderReport(data, userKeywords) {
+        function renderLiteralReport(data) {
             const frequencyRows = data.keywordPerformance.map(k => `
                 <tr class="border-b hover:bg-gray-50">
                     <td class="py-3 px-4 font-semibold">${k.keyword.charAt(0).toUpperCase() + k.keyword.slice(1)}</td>
@@ -411,40 +520,97 @@
                 </div>`).join('');
 
             const sentimentRows = data.keywordPerformance.map(k => {
-                const examplesList = k.context.examples.map(ex => `<li class="mb-1">" ...${ex}... "</li>`).join('');
-                const examplesHtml = k.context.examples.length > 0 ? `<ul class="list-disc list-inside pl-2">${examplesList}</ul>` : 'N/A';
+                const examplesList = k.context.examples.map(ex => `<li class="mb-1 text-gray-700"> ...${ex}... </li>`).join('');
+                const examplesHtml = k.context.examples.length > 0 ? 
+                    `<div class="mt-2">
+                        <strong class="text-sm text-gray-800">Contextual Examples (${k.context.examples.length} found):</strong>
+                        <ol class="list-decimal list-inside pl-4 mt-1">${examplesList}</ol>
+                     </div>` 
+                    : '<p class="mt-2 text-sm text-gray-500">No specific examples found.</p>';
+
                  return `<tr class="border-b hover:bg-gray-50">
-                    <td class="py-3 px-4 font-semibold">${k.keyword.charAt(0).toUpperCase() + k.keyword.slice(1)}</td>
-                    <td class="py-3 px-4"><span class="${k.context.sentimentClass}">${k.context.sentiment}</span></td>
+                    <td class="py-3 px-4 font-semibold align-top">${k.keyword.charAt(0).toUpperCase() + k.keyword.slice(1)}</td>
+                    <td class="py-3 px-4 align-top"><span class="${k.context.sentimentClass}">${k.context.sentiment}</span></td>
                     <td class="py-3 px-4 italic text-gray-600">${examplesHtml}</td>
                 </tr>`;
             }).join('');
             
-            reportSection.innerHTML = `
+            reportSection.innerHTML = getReportShell(data.documentMetrics, data.analysisDate)
+                 .replace('%%QUANTITATIVE_ANALYSIS%%', `
+                    <h3 class="report-h3">2.1 Keyword Frequency & Density</h3>
+                    <div class="overflow-x-auto rounded-lg border"><table class="w-full text-left"><thead class="bg-gray-100"><tr><th class="py-3 px-4 font-bold uppercase text-sm">Keyword</th><th class="py-3 px-4 font-bold uppercase text-sm text-center">Frequency</th><th class="py-3 px-4 font-bold uppercase text-sm text-center">Density (%)</th></tr></thead><tbody>${frequencyRows}</tbody></table></div>
+                    <h3 class="report-h3 mt-8">2.2 Keyword Distribution Visualized</h3>
+                    <div class="p-4 rounded-lg">${distributionChart}</div>`)
+                 .replace('%%QUALITATIVE_ANALYSIS%%', `
+                    <h3 class="report-h3">3.1 Context & Sentiment</h3>
+                    <p class="mb-4 text-gray-700">The following table assesses the contextual sentiment surrounding each keyword, providing an example from the text for illustration.</p>
+                    <div class="overflow-x-auto rounded-lg border"><table class="w-full text-left"><thead class="bg-gray-100"><tr><th class="py-3 px-4 font-bold uppercase text-sm">Keyword</th><th class="py-3 px-4 font-bold uppercase text-sm">Sentiment</th><th class="py-3 px-4 font-bold uppercase text-sm w-2/3">Contextual Examples</th></tr></thead><tbody>${sentimentRows}</tbody></table></div>`);
+            
+            document.getElementById('export-btn').addEventListener('click', handleExportPdf);
+            document.getElementById('new-analysis-btn').addEventListener('click', () => handleClear(true));
+        }
+
+        function renderSemanticReport(data, text) {
+            const documentMetrics = generateReportData(text, [], currentLanguage).documentMetrics;
+            const analysisDate = new Date().toLocaleString();
+
+            const semanticContent = data.map(item => {
+                const examplesList = item.examples.map(ex => `<li class="mb-2 text-gray-700 italic border-l-4 pl-4">"${ex}"</li>`).join('');
+                 const sentimentClass = item.sentiment === 'Positive' ? 'sentiment-positive' : item.sentiment === 'Negative' ? 'sentiment-negative' : 'sentiment-neutral';
+                return `
+                <div class="bg-white p-6 rounded-lg border mb-6">
+                    <h4 class="text-xl font-bold text-blue-700 mb-3">${item.value}</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="bg-gray-50 p-3 rounded-md text-center">
+                            <p class="text-sm font-semibold text-gray-600">Relevance Score</p>
+                            <p class="text-3xl font-bold text-gray-800">${item.relevanceScore}/10</p>
+                        </div>
+                         <div class="bg-gray-50 p-3 rounded-md text-center">
+                            <p class="text-sm font-semibold text-gray-600">Sentiment</p>
+                            <p class="text-3xl font-bold ${sentimentClass}">${item.sentiment}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-800 mb-2">Contextual Summary:</p>
+                        <p class="text-gray-700 leading-relaxed">${item.contextSummary}</p>
+                    </div>
+                    <div class="mt-4">
+                        <p class="font-semibold text-gray-800 mb-2">Representative Examples:</p>
+                        <ul class="space-y-2">${examplesList}</ul>
+                    </div>
+                </div>
+                `
+            }).join('');
+            
+             reportSection.innerHTML = getReportShell(documentMetrics, analysisDate)
+                .replace('%%QUANTITATIVE_ANALYSIS%%', `<h3 class="report-h3">Semantic analysis does not include quantitative metrics.</h3>`)
+                .replace('%%QUALITATIVE_ANALYSIS%%', `<h3 class="report-h3">3.1 AI Semantic Value Analysis</h3>${semanticContent}`);
+
+            document.getElementById('export-btn').addEventListener('click', handleExportPdf);
+            document.getElementById('new-analysis-btn').addEventListener('click', () => handleClear(true));
+        }
+
+        function getReportShell(metrics, date) {
+            return `
                 <div class="space-y-12">
                     <section id="report-intro">
                         <div class="flex justify-between items-start"><h2 class="report-h2">1.0 Introduction</h2><button class="copy-btn" data-target="report-intro" title="Copy Section"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375V9.375a2.25 2.25 0 00-2.25-2.25H1.5A2.25 2.25 0 00-.75 9.375v10.5A2.25 2.25 0 001.5 22.125h10.5a2.25 2.25 0 002.25-2.25z" /></svg><span class="copy-text">Copy</span></button></div>
-                        <p class="mb-4 text-gray-700 leading-relaxed">This report provides a comprehensive analysis of the user-provided document, conducted on <strong class="font-semibold">${data.analysisDate}</strong>. The analysis employs a mixed-method approach, combining quantitative metrics with qualitative, AI-driven insights to evaluate the text based on a selection of user-defined keywords.</p>
+                        <p class="mb-4 text-gray-700 leading-relaxed">This report provides a comprehensive analysis of the user-provided document, conducted on <strong class="font-semibold">${date}</strong>. The analysis employs a mixed-method approach, combining quantitative metrics with qualitative, AI-driven insights to evaluate the text based on a selection of user-defined keywords.</p>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                            <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Total Word Count</p><p class="text-2xl font-bold">${data.documentMetrics.wordCount}</p></div>
-                            <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Est. Reading Time</p><p class="text-2xl font-bold">${data.documentMetrics.readingTime}</p></div>
-                            <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Readability Level</p><p class="text-2xl font-bold">${data.documentMetrics.readabilityScore}</p></div>
+                            <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Total Word Count</p><p class="text-2xl font-bold">${metrics.wordCount}</p></div>
+                            <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Est. Reading Time</p><p class="text-2xl font-bold">${metrics.readingTime}</p></div>
+                            <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-600">Readability Level</p><p class="text-2xl font-bold">${metrics.readabilityScore}</p></div>
                         </div>
                     </section>
                     
                     <section id="report-quant">
                         <div class="flex justify-between items-start"><h2 class="report-h2">2.0 Quantitative Analysis</h2><button class="copy-btn" data-target="report-quant" title="Copy Section"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375V9.375a2.25 2.25 0 00-2.25-2.25H1.5A2.25 2.25 0 00-.75 9.375v10.5A2.25 2.25 0 001.5 22.125h10.5a2.25 2.25 0 002.25-2.25z" /></svg><span class="copy-text">Copy</span></button></div>
-                        <h3 class="report-h3">2.1 Keyword Frequency & Density</h3>
-                        <div class="overflow-x-auto rounded-lg border"><table class="w-full text-left"><thead class="bg-gray-100"><tr><th class="py-3 px-4 font-bold uppercase text-sm">Keyword</th><th class="py-3 px-4 font-bold uppercase text-sm text-center">Frequency</th><th class="py-3 px-4 font-bold uppercase text-sm text-center">Density (%)</th></tr></thead><tbody>${frequencyRows}</tbody></table></div>
-                        <h3 class="report-h3 mt-8">2.2 Keyword Distribution Visualized</h3>
-                        <div class="p-4 rounded-lg">${distributionChart}</div>
+                        %%QUANTITATIVE_ANALYSIS%%
                     </section>
 
                     <section id="report-qual">
                         <div class="flex justify-between items-start"><h2 class="report-h2">3.0 Qualitative Analysis</h2><button class="copy-btn" data-target="report-qual" title="Copy Section"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375V9.375a2.25 2.25 0 00-2.25-2.25H1.5A2.25 2.25 0 00-.75 9.375v10.5A2.25 2.25 0 001.5 22.125h10.5a2.25 2.25 0 002.25-2.25z" /></svg><span class="copy-text">Copy</span></button></div>
-                        <h3 class="report-h3">3.1 Context & Sentiment</h3>
-                        <p class="mb-4 text-gray-700">The following table assesses the contextual sentiment surrounding each keyword, providing an example from the text for illustration.</p>
-                        <div class="overflow-x-auto rounded-lg border"><table class="w-full text-left"><thead class="bg-gray-100"><tr><th class="py-3 px-4 font-bold uppercase text-sm">Keyword</th><th class="py-3 px-4 font-bold uppercase text-sm">Sentiment</th><th class="py-3 px-4 font-bold uppercase text-sm">Contextual Example</th></tr></thead><tbody>${sentimentRows}</tbody></table></div>
+                        %%QUALITATIVE_ANALYSIS%%
                         <div id="ai-qualitative-analysis" class="ai-section rounded-xl p-4 mt-8 generating-ai">
                             <h3 class="report-h3">3.2 AI-Powered Thematic & Stylistic Analysis</h3>
                             <div class="p-4 rounded-lg"><h4 class="text-lg font-semibold text-gray-800 mb-2">Suggested Title</h4><p id="ai-title" class="text-gray-700 italic border-l-4 border-blue-300 pl-3 animate-pulse bg-gray-300 rounded w-3/4 min-h-[1.5rem]"></p></div>
@@ -470,8 +636,6 @@
                 </div>
                 <div class="flex justify-center items-center gap-4 mt-12"><button id="export-btn" class="btn btn-analyze text-white font-bold py-3 px-10 rounded-full text-lg">Export as PDF</button><button id="new-analysis-btn" class="btn btn-clear text-white font-bold py-3 px-10 rounded-full text-lg">Start New Analysis</button></div>
             `;
-            document.getElementById('export-btn').addEventListener('click', handleExportPdf);
-            document.getElementById('new-analysis-btn').addEventListener('click', () => handleClear(true));
         }
         
         function handleReportActions(event) {
@@ -484,17 +648,10 @@
                 const textToCopy = sectionToCopy.innerText;
                 const textArea = document.createElement("textarea");
                 textArea.value = textToCopy;
-                
-                // Make the textarea out of sight
-                textArea.style.position = 'fixed';
-                textArea.style.top = 0;
-                textArea.style.left = 0;
-                textArea.style.width = '2em';
-                textArea.style.height = '2em';
-                textArea.style.padding = 0;
-                textArea.style.border = 'none';
-                textArea.style.outline = 'none';
-                textArea.style.boxShadow = 'none';
+                textArea.style.position = 'fixed'; textArea.style.top = 0; textArea.style.left = 0;
+                textArea.style.width = '2em'; textArea.style.height = '2em';
+                textArea.style.padding = 0; textArea.style.border = 'none';
+                textArea.style.outline = 'none'; textArea.style.boxShadow = 'none';
                 textArea.style.background = 'transparent';
 
                 document.body.appendChild(textArea);
@@ -508,20 +665,17 @@
                         if (copyText) {
                            const originalText = copyText.textContent;
                            copyText.textContent = 'Copied!';
-                           copyBtn.style.backgroundColor = '#48bb78'; // green-500
+                           copyBtn.style.backgroundColor = '#48bb78';
                            setTimeout(() => {
                                copyText.textContent = originalText;
                                copyBtn.style.backgroundColor = '';
                            }, 2000);
                         }
-                    } else {
-                        showError('Could not copy text.');
-                    }
+                    } else { showError('Could not copy text.'); }
                 } catch (err) {
                     console.error('Failed to copy text: ', err);
                     showError('Could not copy text.');
                 }
-
                 document.body.removeChild(textArea);
             }
         }
@@ -569,15 +723,27 @@
             }
         }
         
-        function findContext(sentences, keyword) {
-            const positiveWords = ['good', 'great', 'excellent', 'positive', 'benefit', 'advantage', 'quality', 'success', 'prepare', 'invest', 'revolution', 'adapt', 'جيد', 'رائع', 'ممتاز', 'إيجابي', 'فائدة', 'ميزة'];
-            const negativeWords = ['bad', 'poor', 'negative', 'disadvantage', 'problem', 'issue', 'risk', 'fail', 'necessary', 'depend', 'سيء', 'ضعيف', 'سلبي', 'مشكلة', 'خطر', 'فشل'];
+        function findContext(sentences, keyword, language) {
+            let positiveWords, negativeWords;
+
+            if (language === 'ar') {
+                positiveWords = ['جيد', 'رائع', 'ممتاز', 'إيجابي', 'فائدة', 'ميزة', 'نجاح', 'استثمار', 'تطور'];
+                negativeWords = ['سيء', 'ضعيف', 'سلبي', 'مشكلة', 'خطر', 'فشل', 'يعتمد', 'ضروري'];
+            } else { // Default to English
+                positiveWords = ['good', 'great', 'excellent', 'positive', 'benefit', 'advantage', 'quality', 'success', 'prepare', 'invest', 'revolution', 'adapt'];
+                negativeWords = ['bad', 'poor', 'negative', 'disadvantage', 'problem', 'issue', 'risk', 'fail', 'necessary', 'depend'];
+            }
+            
             let sentimentScore = 0;
-            const examples = sentences.filter(s => s.toLowerCase().includes(keyword.toLowerCase())).slice(0, 3).map(s => {
+            
+            const safeKeyword = keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const keywordRegex = new RegExp(`\\b${safeKeyword}\\b`, 'gi');
+            
+            const examples = sentences.filter(s => keywordRegex.test(s.toLowerCase())).slice(0, 3).map(s => {
                 const wordsInSentence = s.toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
                 wordsInSentence.forEach(word => { if (positiveWords.includes(word)) sentimentScore++; if (negativeWords.includes(word)) sentimentScore--; });
-                const safeKeyword = keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'); const regex = new RegExp(`(${safeKeyword})`, 'gi');
-                return s.trim().replace(regex, `<strong class="font-bold text-blue-600">$1</strong>`);
+                const highlightRegex = new RegExp(`(\\b${safeKeyword}\\b)`, 'gi');
+                return s.trim().replace(highlightRegex, `<strong class="font-bold text-blue-600">$1</strong>`);
             });
             let sentiment = 'Neutral', sentimentClass = 'sentiment-neutral';
             if (sentimentScore > 0) { sentiment = 'Positive'; sentimentClass = 'sentiment-positive'; }
